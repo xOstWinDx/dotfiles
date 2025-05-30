@@ -25,7 +25,7 @@ def detect_package_manager():
 
 
 def install_packages(manager):
-    packages = ['zsh', 'curl', 'bat', 'micro', 'lsd', 'fzf', 'fastfetch', 'lazygit', 'btop']
+    packages = ['zsh', 'curl', 'bat', 'micro', 'lsd', 'fzf', 'fastfetch', 'btop']
     if manager == 'apt':
         packages += ['fonts-powerline']
         cmds = [
@@ -33,7 +33,7 @@ def install_packages(manager):
             ['sudo', '-S', 'apt', 'install', '-y'] + packages
         ]
     elif manager == 'pacman':
-        packages = ['powerline-fonts']
+        packages = ['powerline-fonts', 'lazygit']
         cmds = [
             ['sudo', '-S', 'pacman', '-Sy', '--needed', '--noconfirm'] + packages
         ]
