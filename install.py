@@ -48,11 +48,20 @@ def install_oh_my_zsh():
         print("Oh My Zsh уже установлен.")
         return
 
-    subprocess.run(
-        ['sh', '-c',
-         '$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)'],
-        check=True
-    )
+    print("Скачиваем скрипт установки Oh My Zsh...")
+
+    import tempfile
+    import urllib.request
+
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        url = "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
+        with urllib.request.urlopen(url) as response:
+            script_data = response.read()
+            temp_file.write(script_data)
+            script_path = temp_file.name
+
+    print(f"Запускаем скрипт: {script_path}")
+    subprocess.run(['sh', script_path], check=True)
 
 def install_zsh_plugins():
     plugins = {
