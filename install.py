@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import getpass
 import shutil
 import subprocess
 import sys
@@ -10,6 +11,9 @@ HOME = Path.home()
 
 ZSH_CUSTOM = HOME / ".oh-my-zsh/custom"
 
+sudo_pass = getpass.getpass()
+
+
 def detect_package_manager():
     if shutil.which('apt'):
         return 'apt'
@@ -19,8 +23,9 @@ def detect_package_manager():
         print("Unsupported Linux distribution.")
         sys.exit(1)
 
+
 def install_packages(manager):
-    packages = ['zsh', 'curl', 'bat', 'micro', 'lsd', 'fzf', 'fastfetch']
+    packages = ['zsh', 'curl', 'bat', 'micro', 'lsd', 'fzf', 'fastfetch', 'lazygit', 'btop']
     if manager == 'apt':
         packages += ['fonts-powerline']
         cmds = [
@@ -35,12 +40,10 @@ def install_packages(manager):
     else:
         return
 
-    import getpass
-    sudo_pass = getpass.getpass()
-
     for cmd in cmds:
         print(f"Running: {' '.join(cmd)}")
         proc = subprocess.run(cmd, input=(sudo_pass + '\n').encode(), check=True)
+
 
 def install_oh_my_zsh():
     omz_dir = HOME / '.oh-my-zsh'
@@ -63,6 +66,7 @@ def install_oh_my_zsh():
     print(f"Запускаем скрипт: {script_path}")
     subprocess.run(['sh', script_path], check=True)
 
+
 def install_zsh_plugins():
     plugins = {
         "zsh-autosuggestions": "https://github.com/zsh-users/zsh-autosuggestions.git",
@@ -76,6 +80,7 @@ def install_zsh_plugins():
             continue
         subprocess.run(["git", "clone", repo, str(plugin_path)], check=True)
 
+
 def symlink(src: Path, dest: Path):
     if dest.exists() or dest.is_symlink():
         backup = dest.with_suffix('.bak')
@@ -84,8 +89,18 @@ def symlink(src: Path, dest: Path):
     print(f"Creating symlink: {dest} -> {src}")
     dest.symlink_to(src)
 
+
 def setup_symlinks():
     symlink(CONFIGS_DIR / '.zshrc', HOME / '.zshrc')
+
+
+def install_lazydocker():
+    subprocess.run(
+        [
+            'bash',
+            '-c',
+            'curl https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash'],
+        check=True)
 
 
 def change_default_shell():
@@ -93,12 +108,16 @@ def change_default_shell():
     subprocess.run(['chsh', '-s', zsh_path], check=True)
     print(f"Default shell changed to: {zsh_path}")
 
+
 def main():
     pkg_manager = detect_package_manager()
     print(f"Detected package manager: {pkg_manager}")
 
     print("Installing packages...")
     install_packages(pkg_manager)
+
+    print("Installing lazydocker...")
+    install_lazydocker()
 
     print("Installing Oh My Zsh...")
     install_oh_my_zsh()
@@ -113,6 +132,7 @@ def main():
     change_default_shell()
 
     print("Setup complete!")
+
 
 if __name__ == '__main__':
     main()
