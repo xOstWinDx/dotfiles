@@ -23,7 +23,7 @@ This repository contains my personal dotfiles and a Python-based installer scrip
 ### 1. Clone this repository
 
 ```bash
-git clone https://github.com/yourusername/dotfiles.git ~/dotfiles
+git clone https://github.com/xostwindx/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ```
 
