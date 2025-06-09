@@ -26,23 +26,34 @@ def detect_package_manager():
 
 def install_packages(manager):
     packages = ['zsh', 'curl', 'bat', 'micro', 'lsd', 'fzf', 'fastfetch', 'btop']
+
     if manager == 'apt':
         packages += ['fonts-powerline']
+
+        print("Adding Fastfetch PPA repository...")
+        subprocess.run(
+            ['sudo', '-S', 'add-apt-repository', '-y', 'ppa:zhangsongcui3371/fastfetch'],
+            input=(sudo_pass + '\n').encode(),
+            check=True
+        )
+
         cmds = [
             ['sudo', '-S', 'apt', 'update'],
             ['sudo', '-S', 'apt', 'install', '-y'] + packages
         ]
+
     elif manager == 'pacman':
         packages = ['powerline-fonts', 'lazygit']
         cmds = [
             ['sudo', '-S', 'pacman', '-Sy', '--needed', '--noconfirm'] + packages
         ]
+
     else:
         return
 
     for cmd in cmds:
         print(f"Running: {' '.join(cmd)}")
-        proc = subprocess.run(cmd, input=(sudo_pass + '\n').encode(), check=True)
+        subprocess.run(cmd, input=(sudo_pass + '\n').encode(), check=True)
 
 
 def install_oh_my_zsh():
