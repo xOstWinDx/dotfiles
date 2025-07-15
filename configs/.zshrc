@@ -28,6 +28,7 @@ plugins=(
     ssh-agent
     autojump
     dirhistory
+    zsh-interactive-cd
 )
 
 source $ZSH/oh-my-zsh.sh
