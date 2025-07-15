@@ -29,6 +29,7 @@ plugins=(
     autojump
     dirhistory
     zsh-interactive-cd
+    poetry-env
 )
 
 source $ZSH/oh-my-zsh.sh
