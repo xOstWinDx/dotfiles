@@ -27,6 +27,7 @@ plugins=(
     colored-man-pages
     ssh-agent
     autojump
+    dirhistory
 )
 
 source $ZSH/oh-my-zsh.sh
