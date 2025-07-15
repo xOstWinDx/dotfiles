@@ -80,17 +80,54 @@ def install_oh_my_zsh():
 
 def install_zsh_plugins():
     plugins = {
-        "zsh-autosuggestions": "https://github.com/zsh-users/zsh-autosuggestions.git",
-        "zsh-syntax-highlighting": "https://github.com/zsh-users/zsh-syntax-highlighting.git"
+        "zsh-autosuggestions": {
+            "url": "https://github.com/zsh-users/zsh-autosuggestions.git",
+            "commands": []
+        },
+        "zsh-syntax-highlighting": {
+            "url": "https://github.com/zsh-users/zsh-syntax-highlighting.git",
+            "commands": []
+        },
+        "autojump": {
+            "url": "https://github.com/wting/autojump.git",
+            "commands": [['python', 'install.py']] # Более надежный способ установки autojump
+        }
     }
 
-    for name, repo in plugins.items():
+    for name, plugin in plugins.items():
         plugin_path = ZSH_CUSTOM / "plugins" / name
-        if plugin_path.exists():
-            print(f"Plugin {name} уже установлен.")
-            continue
-        subprocess.run(["git", "clone", repo, str(plugin_path)], check=True)
 
+        try:
+            if plugin_path.exists():
+                print(f"Plugin {name} уже установлен.")
+                continue
+
+            print(f"Installing plugin {name}...")
+            subprocess.run(["git", "clone", plugin["url"], str(plugin_path)], check=True)
+
+            # Выполнение команд для плагина
+            for command in plugin["commands"]:
+                print(f"Running command for {name}: {' '.join(command)}")  # Полезно для отладки
+                subprocess.run(command, check=True, cwd=plugin_path) # Важно: cwd указывает на директорию плагина
+
+            print(f"Plugin {name} installed successfully.")
+
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install plugin {name}: {e}")
+            if plugin_path.exists():
+                try:
+                    shutil.rmtree(plugin_path)
+                    print(f"Removed partially installed plugin {name}.")
+                except OSError as cleanup_error:
+                    print(f"Failed to cleanup partial install of {name}: {cleanup_error}")
+        except Exception as e:
+            print(f"General error installing plugin {name}: {e}")
+            if plugin_path.exists():
+                try:
+                    shutil.rmtree(plugin_path)
+                    print(f"Removed partially installed plugin {name}.")
+                except OSError as cleanup_error:
+                    print(f"Failed to cleanup partial install of {name}: {cleanup_error}")
 
 def symlink(src: Path, dest: Path):
     if dest.exists() or dest.is_symlink():

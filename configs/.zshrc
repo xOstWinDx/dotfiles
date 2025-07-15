@@ -3,8 +3,11 @@ export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=$HOME/.local/bin:$PATH
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
+export PATH="/var/lib/snapd/snap/bin:$PATH"
 export ZSH="$HOME/.oh-my-zsh"
 export BAT_PAGER="less -FRX"
+
+export OLLAMA_MODELS="/mnt/llm/.ollama/models"
 
 if [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]; then
     ZSH_THEME="risto"
@@ -23,7 +26,7 @@ plugins=(
     poetry
     colored-man-pages
     ssh-agent
-
+    autojump
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -53,6 +56,7 @@ alias dj="python ./manage.py"
 compdef _python dj
 alias cat=bat
 alias nano=micro
-alias bat='batcat --style=plain'
+alias bat='bat --style=plain'
 alias ld="lazydocker"
 alias lg="lazygit"
+export GOOGLE_CLOUD_PROJECT=yellduck
