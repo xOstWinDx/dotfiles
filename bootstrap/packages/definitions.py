@@ -47,7 +47,6 @@ PACKAGES: dict[str, Package] = {
         pacman="fish",
         dnf="fish",
         brew="fish",
-        install_script="install_fish"
     ),
     "starship": Package(
         name="starship",
@@ -57,7 +56,6 @@ PACKAGES: dict[str, Package] = {
         pacman="starship",
         dnf="starship",
         brew="starship",
-        install_url="https://starship.rs/install.sh"
     ),
     "zsh": Package(
         name="zsh",
@@ -90,7 +88,6 @@ PACKAGES: dict[str, Package] = {
         pacman="eza",
         dnf="eza",
         brew="eza",
-        install_url="https://github.com/eza-community/eza/releases"
     ),
     "bat": Package(
         name="bat",
@@ -131,7 +128,6 @@ PACKAGES: dict[str, Package] = {
         pacman="zoxide",
         dnf="zoxide",
         brew="zoxide",
-        install_url="https://github.com/ajeetdsouza/zoxide/releases"
     ),
     
     # Search
@@ -175,13 +171,11 @@ PACKAGES: dict[str, Package] = {
         pacman="lazygit",
         dnf="lazygit",
         brew="lazygit",
-        install_url="https://github.com/jesseduffield/lazygit/releases"
     ),
     "lazydocker": Package(
         name="lazydocker",
         category=PackageCategory.GIT_TOOLS,
         description="TUI for docker",
-        install_url="https://github.com/jesseduffield/lazydocker/releases"
     ),
     "gh": Package(
         name="gh",
@@ -200,7 +194,6 @@ PACKAGES: dict[str, Package] = {
         pacman="delta",
         dnf="delta",
         brew="delta",
-        install_url="https://github.com/dandavison/delta/releases"
     ),
     
     # Dev tools
@@ -212,7 +205,6 @@ PACKAGES: dict[str, Package] = {
         pacman="micro",
         dnf="micro",
         brew="micro",
-        install_url="https://github.com/zyedidia/micro/releases"
     ),
     "tmux": Package(
         name="tmux",

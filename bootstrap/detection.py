@@ -41,7 +41,7 @@ def detect_linux_distro() -> Distro:
         for line in content.splitlines():
             if line.startswith("ID="):
                 distro_id = line.split("=")[1].strip().strip('"')
-                if distro_id in ("arch", "manjaro", "endeavouros"):
+                if distro_id in ("arch", "manjaro", "endeavouros", "cachyos", "arcolinux", "artix", "chimeraos"):
                     return Distro.ARCH
                 elif distro_id in ("ubuntu", "linuxmint", "pop"):
                     return Distro.UBUNTU

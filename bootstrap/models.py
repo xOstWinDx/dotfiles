@@ -104,10 +104,6 @@ class Package:
     brew: Optional[str] = None
     winget: Optional[str] = None
     
-    # Alternative installation methods
-    install_script: Optional[str] = None
-    install_url: Optional[str] = None
-    
     def get_package_name(self, pm: PackageManager) -> Optional[str]:
         """Get package name for specific package manager."""
         mapping = {
@@ -152,3 +148,17 @@ class DeploymentResult:
     message: str
     backup_path: Optional[Path] = None
     error: Optional[str] = None
+
+
+@dataclass
+class ConfigManifest:
+    """Config deployment manifest entry."""
+    source: str  # Relative path in configs/
+    target: str  # Target path in home/config
+    platforms: list[Platform] = field(default_factory=list)  # Empty = all platforms
+    profiles: list[ProfileType] = field(default_factory=list)  # Empty = all profiles
+    strategy: DeploymentStrategy = DeploymentStrategy.SYMLINK
+    optional: bool = False
+    owner_only: bool = True  # Only deploy for current user (not system-wide)
+    description: str = ""
+    condition: Optional[str] = None  # Optional condition function name

@@ -1,0 +1,12 @@
+# Copy this file to:
+# ~/.config/fish/conf.d/90-local.fish
+# and put machine-specific or private config here.
+
+# Example:
+# set -gx OLLAMA_MODELS "/mnt/llm/.ollama/models"
+
+# Example:
+# alias dj "python ./manage.py"
+
+# Example:
+# set -gx OPENAI_API_KEY "..."
