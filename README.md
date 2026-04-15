@@ -1,76 +1,92 @@
-# 🛠️ My Dotfiles & System Bootstrap
+# Bootstrap - Modern Dotfiles & System Installer
 
-This repository contains my personal dotfiles and a Python-based installer script for setting up a comfortable terminal environment on Linux (tested on Ubuntu and Arch-based systems).
+A cross-platform Python tool for bootstrapping development environments with support for Linux (Arch, Ubuntu), macOS, and Windows.
 
-## ✨ Features
+## Features
 
-- Installs and configures:
-  - `zsh` + Oh My Zsh
-  - Useful plugins: `zsh-autosuggestions`, `zsh-syntax-highlighting`, etc.
-  - Aliases and shell enhancements
-- Installs terminal utilities:
-  - `bat` (with custom config)
-  - `micro` (as simple syntax-highlighted editor)
-  - `lsd` / `exa` (modern `ls`)
-  - `fzf` and `zoxide` (fast file and directory navigation)
-  - `btop` (modern system monitor)
-  - `lazygit` and `lazydocker` (TUI interfaces for Git and Docker)
-- Automatically links or installs configuration files from `configs/`
-- Works with both `apt` and `pacman`
+- **Auto-detection**: Automatically detects OS, distribution, SSH sessions, and GUI availability
+- **Smart profiles**: minimal, server, desktop, full - or auto-selection based on environment
+- **Package management**: Supports apt, pacman, dnf, brew, winget
+- **Safe deployment**: Backup existing configs, dry-run mode, idempotent operations
+- **Modern stack**: fish, starship, kitty, eza, fzf, zoxide and more
 
-## 🚀 Installation
-
-### 1. Clone this repository
+## Quick Start
 
 ```bash
-git clone https://github.com/xostwindx/dotfiles.git ~/dotfiles
+# Clone repository
+git clone https://github.com/xOstWinDx/dotfiles.git ~/dotfiles
 cd ~/dotfiles
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install click
+
+# Check system info
+python -m bootstrap doctor
+
+# Install with auto-detected profile
+python -m bootstrap install
+
+# Or specify profile
+python -m bootstrap install --profile desktop --dry-run
 ```
 
-### 2. Run the installer
+## Profiles
+
+| Profile | Description |
+|---------|-------------|
+| minimal | Core tools: git, curl, jq, starship |
+| server | Server stack: +fish, fzf, zoxide, micro, ripgrep, fastfetch |
+| desktop | Desktop stack: +btop, bat, fd, eza, lazygit |
+| full | Complete stack: +lazydocker, gh, delta, tmux, direnv, kitty |
+
+## CLI Commands
 
 ```bash
-make install
+bootstrap doctor        # Check system and dependencies
+bootstrap install       # Install dotfiles and packages
+bootstrap plan         # Show installation plan
+bootstrap profile-ls   # List available profiles
+bootstrap packages-ls  # List available packages
 ```
 
-You'll be prompted for your `sudo` password to install system packages.
+## Architecture
 
-> 💡 If something fails, check the output logs — some packages might require additional steps depending on your distro/version.
-
-### 3. Re-login (important)
-
-If Docker was installed and you added your user to the `docker` group, re-login or run:
-
-```bash
-newgrp docker
+```
+bootstrap/
+├── cli.py              # CLI interface (Click)
+├── detection.py        # System detection
+├── models.py           # Data models
+├── privilege.py        # Sudo/UAC management
+├── logging.py          # Logging setup
+├── packages/
+│   ├── definitions.py  # Package definitions
+│   └── registry.py     # Installation logic
+├── profiles/
+│   └── definitions.py  # Profile definitions
+├── configs/
+│   └── symlinker.py   # Config deployment
+└── core/
+    └── installer.py   # Main orchestrator
 ```
 
-to apply the changes.
+## Packages
 
-## 🖥 Terminal Experience
+Core packages (all profiles):
+- git, curl, jq
 
-The setup enables:
+Shell packages:
+- fish, starship
 
-- Prompt with Git status, `user@host`, and working directory
-- Syntax-highlighted file previews using `bat`
-- Fast fuzzy history and file search with `fzf`
-- Quick `cd` with `zoxide`
-- Git and Docker TUI tools via `lazygit` and `lazydocker`
+Desktop packages:
+- kitty, eza, bat, fd, btop, fastfetch
 
-## 🔧 Customization
+Developer packages:
+- fzf, zoxide, micro, ripgrep, lazygit, lazydocker, gh, delta, tmux, direnv
 
-You can edit:
+## License
 
-- `configs/.zshrc` — for prompt, aliases, plugins
-- `install.py` — to add packages or logic
-- `Makefile` — to add other tasks
-
-## 📦 Requirements
-
-- Python 3.7+
-- Internet connection
-- POSIX-compatible terminal (Alacritty, Kitty, Konsole, etc.)
-- `make`
-
-## 📄 License
-MIT License — feel free to fork, adapt, and improve.
+MIT
