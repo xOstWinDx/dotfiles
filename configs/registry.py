@@ -1,5 +1,6 @@
 """Config deployment registry - maps source files to target paths."""
 
+from functools import lru_cache
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -177,12 +178,43 @@ CONFIG_MANIFEST: list[ConfigManifest] = [
 # Add path import for CONFIGS_DIR
 from pathlib import Path
 
+@lru_cache(maxsize=1)
+def get_repo_root() -> Path:
+    # 1) Явный override через env
+    env_root = os.environ.get("BOOTSTRAP_REPO_ROOT")
+    if env_root:
+        root = Path(env_root).expanduser().resolve()
+        if not root.exists():
+            raise FileNotFoundError(
+                f"BOOTSTRAP_REPO_ROOT points to non-existent path: {root}"
+            )
+        return root
+
+    # 2) Ищем корень репозитория вверх от текущего файла
+    current = Path(__file__).resolve()
+
+    for parent in [current.parent, *current.parents]:
+        if (parent / "pyproject.toml").is_file():
+            return parent
+        if (parent / ".git").exists():
+            return parent
+
+    raise RuntimeError(
+        f"Could not determine repository root starting from: {current}"
+    )
+
+
+@lru_cache(maxsize=1)
 def get_configs_dir() -> Path:
-    return Path(__file__).parent.parent.parent / 'configs'
+    configs_dir = get_repo_root() / "configs"
+    if not configs_dir.is_dir():
+        raise FileNotFoundError(f"Configs directory not found: {configs_dir}")
+    return configs_dir
+
 
 def get_source_path(manifest_entry: ConfigManifest) -> Path:
-    return get_configs_dir() / manifest_entry.source
-
+    source = get_configs_dir() / manifest_entry.source
+    return source.resolve(strict=False)
 def get_target_path(manifest_entry: ConfigManifest, home_dir: Path) -> Path:
     return home_dir / manifest_entry.target
 

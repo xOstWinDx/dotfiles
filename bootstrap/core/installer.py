@@ -6,8 +6,8 @@ from bootstrap.logging import get_logger, setup_logging
 from bootstrap.models import DeploymentResult, Platform, ProfileType, ShellType, SystemInfo
 from bootstrap.packages.registry import PackageRegistry
 from bootstrap.profiles.definitions import get_profile_packages
-from bootstrap.configs.symlinker import Symlinker
-from bootstrap.configs.registry import (
+from configs.symlinker import Symlinker
+from configs.registry import (
     CONFIG_MANIFEST,
     filter_configs_for_system,
     get_source_path,
