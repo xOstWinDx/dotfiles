@@ -1,9 +1,10 @@
 add_newline = false
 
-format = """
-$cmd_duration $directory$git_branch
-  $character"""
 
+format = """
+$cmd_duration $directory$git_branch$git_status$python
+  $character"""
+  
 [fill]
 style = 'fg:245'
 symbol = '-'
@@ -88,4 +89,12 @@ truncation_symbol = ".../"
 
 [cmd_duration]
 format = '[](bold fg:252)[󰪢 $duration](bold bg:252 fg:235)[](bold fg:252)'
-min_time = 0
+min_time = 500
+
+[python]
+symbol = " "
+pyenv_version_name = true
+detect_extensions = ["py", "ipynb"]
+detect_files = ["pyproject.toml", "requirements.txt", "setup.py", "tox.ini", "Pipfile", ".python-version"]
+detect_folders = [".venv", "venv"]
+format = ' [](bold fg:111)[$symbol${pyenv_prefix}(${version} )(\($virtualenv\) )](fg:235 bg:111)[](bold fg:111)'
