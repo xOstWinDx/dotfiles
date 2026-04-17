@@ -26,6 +26,8 @@ STARSHIP_PATH = REPO / "configs" / "common" / "starship" / "starship.toml"
 
 STARSHIP_BEGIN = "### BEGIN GENERATED THEME (configs/common/theme/palette.toml)"
 STARSHIP_END = "### END GENERATED THEME (configs/common/theme/palette.toml)"
+# Starship `palette = "…"` must match this table name (see configs/common/starship/starship.toml).
+STARSHIP_PALETTE_NAME = "onedark"
 
 # fish_color_* ← starship_palette key (semantic link)
 FISH_FROM_PALETTE: list[tuple[str, str]] = [
@@ -105,7 +107,7 @@ def render_fish(starship_palette: dict[str, str]) -> str:
 
 
 def render_starship_palette_block(starship_palette: dict[str, str]) -> str:
-    lines = ["[palettes.nordic]"]
+    lines = [f"[palettes.{STARSHIP_PALETTE_NAME}]"]
     for key in sorted(starship_palette.keys()):
         val = starship_palette[key].replace("\\", "\\\\").replace('"', '\\"')
         lines.append(f'{key} = "{val}"')
@@ -127,10 +129,10 @@ def splice_starship(generated_block: str) -> None:
         return
 
     # Insert before EOF if no markers yet
-    if "[palettes.nordic]" in text and STARSHIP_BEGIN not in text:
+    if re.search(r"\[palettes\.\w+\]", text) and STARSHIP_BEGIN not in text:
         sys.exit(
-            "starship.toml contains [palettes.nordic] but no theme markers. "
-            "Run once: add markers around [palettes.nordic] or use a fresh starship.toml from the repo."
+            "starship.toml contains [palettes.*] but no theme markers. "
+            "Add markers around the generated palette block (see repo starship.toml)."
         )
     sys.exit("starship.toml: add markers:\n" + STARSHIP_BEGIN + "\n...\n" + STARSHIP_END)
 
