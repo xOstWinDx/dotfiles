@@ -1,10 +1,10 @@
 add_newline = false
 
-
+# $hostname / $localip render only over SSH (see [hostname] / [localip] ssh_only) so local vs remote prompts differ clearly.
 format = """
-$cmd_duration $directory$git_branch$git_status$python
+$hostname$localip$cmd_duration $directory$git_branch$git_status$python
   $character"""
-  
+
 [fill]
 style = 'fg:245'
 symbol = '-'
@@ -36,21 +36,30 @@ ahead = " 🏎💨 "
 behind = " 😰 "
 conflicted = " 🏳 "
 deleted = " 🗑 "
-diverged = " � "
+diverged = " 🔀 "
 modified = " 📝 "
 renamed = " ✍️ "
 staged = '[++\($count\)](green)'
 stashed = " 📦 "
 untracked = " 🤷 ‍"
 
+# Only when SSH_* is set — local sessions stay without this block (easy to see “am I remote?”).
 [hostname]
 disabled = false
-format = "[•$hostname](bg:252 bold fg:235)[](bold fg:252)"
-ssh_only = false
-trim_at = ".companyname.com"
+ssh_only = true
+ssh_symbol = "󰌘 "
+format = "[](bold fg:203)[$ssh_symbol$hostname](bold bg:203 fg:230)[](bold fg:203) "
+trim_at = ".local"
 
 [line_break]
 disabled = false
+
+# Primary IPv4 on the machine you SSH’d into (ssh_only — same as hostname).
+[localip]
+disabled = false
+ssh_only = true
+style = "bold bg:214 fg:235"
+format = "[](bold fg:214)[󰩠 $localipv4]($style)[](bold fg:214) "
 
 [memory_usage]
 disabled = true
