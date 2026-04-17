@@ -1,91 +1,71 @@
-add_newline = false
+"$schema" = "https://starship.rs/config-schema.json"
 
-# $hostname / $localip render only over SSH (see [hostname] / [localip] ssh_only) so local vs remote prompts differ clearly.
+add_newline = true
+palette = "nordic"
+
+# Minimal, no filled segments: icons + palette fg only. SSH vs local differs via $hostname / $localip (ssh_only).
 format = """
-$hostname$localip$cmd_duration $directory$git_branch$git_status$python
-  $character"""
+[╭─](bold gray4)\
+$sudo\
+$username\
+$hostname\
+$localip\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+$python\
+$cmd_duration\
+$jobs\
+$line_break\
+[╰─](bold gray4)\
+$character"""
 
 [fill]
-style = 'fg:245'
-symbol = '-'
-
-[character]
-error_symbol = "[ ](bold fg:244)"
-success_symbol = "[ ](bold fg:243)"
+symbol = " "
 
 [package]
 disabled = true
 
-[git_branch]
-format = " 󰜥 [](bold fg:252)[$symbol $branch(:$remote_branch)](fg:235 bg:252)[ ](bold fg:252)"
-style = "bg:252"
-symbol = "󰘬"
-truncation_length = 12
-truncation_symbol = ""
+[direnv]
+disabled = true
 
-[git_commit]
-commit_hash_length = 4
-tag_symbol = " "
+[nix_shell]
+disabled = true
 
-[git_state]
-cherry_pick = "[🍒 PICKING](bold red)"
-format = '[\($state( $progress_current of $progress_total)\)]($style) '
+# ── prompt character ───────────────────────────────────────────────────────
+[character]
+success_symbol = "[](bold green_bright)"
+error_symbol = "[](bold red_bright)"
 
-[git_status]
-ahead = " 🏎💨 "
-behind = " 😰 "
-conflicted = " 🏳 "
-deleted = " 🗑 "
-diverged = " 🔀 "
-modified = " 📝 "
-renamed = " ✍️ "
-staged = '[++\($count\)](green)'
-stashed = " 📦 "
-untracked = " 🤷 ‍"
+# ── identity & SSH (hostname + IP only on SSH) ─────────────────────────────
+[username]
+disabled = false
+show_always = true
+style_root = "bold red_bright"
+style_user = "bold white0_reduce_blue"
+format = "[ $user]($style) "
 
-# Only when SSH_* is set — local sessions stay without this block (easy to see “am I remote?”).
 [hostname]
 disabled = false
 ssh_only = true
 ssh_symbol = "󰌘 "
-format = "[](bold fg:203)[$ssh_symbol$hostname](bold bg:203 fg:230)[](bold fg:203) "
 trim_at = ".local"
+format = "[$ssh_symbol$hostname](bold red_bright) "
 
-[line_break]
-disabled = false
-
-# Primary IPv4 on the machine you SSH’d into (ssh_only — same as hostname).
 [localip]
 disabled = false
 ssh_only = true
-style = "bold bg:214 fg:235"
-format = "[](bold fg:214)[󰩠 $localipv4]($style)[](bold fg:214) "
+format = "[󰩠 $localipv4](bold yellow_dim) "
 
-[memory_usage]
-disabled = true
-style = "bold dimmed green"
-symbol = " "
-threshold = -1
-
-[time]
-disabled = true
-format = '🕙[\[ $time \]]($style) '
-time_format = "%T"
-
-[username]
-disabled = false
-format = "[](bold fg:252)[$user]($style)"
-show_always = true
-style_root = "red bold"
-style_user = "bold bg:252 fg:235"
-
+# ── path ───────────────────────────────────────────────────────────────────
 [directory]
-format = '[](bold fg:255)[󰉋 → $path]($style)[](bold fg:255)'
-home_symbol = " "
-read_only = "  "
-style = "bg:255 fg:240"
-truncation_length = 2
-truncation_symbol = ".../"
+read_only = " "
+style = "bold cyan_bright dimmed"
+truncation_length = 3
+truncation_symbol = "…/"
+home_symbol = "~ "
+format = "[$read_only]($read_only_style)[󰉋 $path]($style) "
 
 [directory.substitutions]
 "Desktop" = "  "
@@ -96,14 +76,124 @@ truncation_symbol = ".../"
 "Pictures" = "  "
 "Videos" = "  "
 
-[cmd_duration]
-format = '[](bold fg:252)[󰪢 $duration](bold bg:252 fg:235)[](bold fg:252)'
-min_time = 500
+# ── git (compact glyphs) ───────────────────────────────────────────────────
+[git_branch]
+symbol = "󰘬 "
+format = "[$symbol$branch(:$remote_branch)](bold magenta_bright dimmed) "
+truncation_length = 20
+truncation_symbol = "…"
 
+[git_state]
+format = '[\($state( $progress_current/$progress_total)\)](bold red_bright) '
+cherry_pick = "[󰏫 cherry](bold red_bright)"
+
+[git_status]
+style = "bold magenta_bright dimmed"
+ahead = " 󰞙 "
+behind = " 󰞀 "
+conflicted = " 󰞇 "
+deleted = " 󰆴 "
+diverged = " 󰓒 "
+modified = " 󰏫 "
+renamed = " 󰏠 "
+staged = " 󰄬 "
+stashed = " 󰏌 "
+untracked = " 󰋗 "
+
+[git_commit]
+disabled = true
+
+# ── python / venv ──────────────────────────────────────────────────────────
 [python]
-symbol = " "
+symbol = " "
 pyenv_version_name = true
 detect_extensions = ["py", "ipynb"]
 detect_files = ["pyproject.toml", "requirements.txt", "setup.py", "tox.ini", "Pipfile", ".python-version"]
 detect_folders = [".venv", "venv"]
-format = ' [](bold fg:111)[$symbol${pyenv_prefix}(${version} )(\($virtualenv\) )](fg:235 bg:111)[](bold fg:111)'
+# Single-quoted: Starship needs `\(` for literal parens around `$virtualenv`; in TOML `"..."` that `\` breaks parsing.
+format = '[$symbol${pyenv_prefix}(${version} )(\($virtualenv\) )](bold green_bright) '
+
+# ── timing & privilege hints ───────────────────────────────────────────────
+[cmd_duration]
+min_time = 500
+show_milliseconds = false
+format = "[ $duration](bold yellow_bright) "
+
+[sudo]
+disabled = false
+format = "[](bold red_bright) "
+
+[status]
+disabled = true
+
+[jobs]
+disabled = false
+symbol = "󰜺 "
+format = "[$symbol$number](bold yellow_base) "
+threshold = 1
+
+[line_break]
+disabled = false
+
+# ── unused modules (explicit off = faster) ────────────────────────────────
+[memory_usage]
+disabled = true
+
+[time]
+disabled = true
+
+[container]
+disabled = true
+
+[os]
+disabled = true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Palette (Nord-inspired) — fg-only styles reference these keys.
+# ═══════════════════════════════════════════════════════════════════════════
+[palettes.nordic]
+
+black0 = "#191D24"
+black1 = "#1E222A"
+black2 = "#222630"
+
+gray0 = "#242933"
+gray1 = "#2E3440"
+gray2 = "#3B4252"
+gray3 = "#434C5E"
+gray4 = "#4C566A"
+gray5 = "#60728A"
+
+white0_normal = "#BBC3D4"
+white0_reduce_blue = "#C0C8D8"
+white1 = "#D8DEE9"
+white2 = "#E5E9F0"
+white3 = "#ECEFF4"
+
+blue0 = "#5E81AC"
+blue1 = "#81A1C1"
+blue2 = "#88C0D0"
+
+cyan_base = "#8FBCBB"
+cyan_bright = "#9FC6C5"
+cyan_dim = "#80B3B2"
+
+red_base = "#BF616A"
+red_bright = "#C5727A"
+red_dim = "#B74E58"
+
+orange_base = "#D08770"
+orange_bright = "#D79784"
+orange_dim = "#CB775D"
+
+yellow_base = "#EBCB8B"
+yellow_bright = "#EFD49F"
+yellow_dim = "#E7C173"
+
+green_base = "#A3BE8C"
+green_bright = "#B1C89D"
+green_dim = "#97B67C"
+
+magenta_base = "#B48EAD"
+magenta_bright = "#BE9DB8"
+magenta_dim = "#A97EA1"
