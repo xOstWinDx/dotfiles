@@ -30,9 +30,14 @@ def cli():
 @click.option("--no-pyenv", is_flag=True, help="Skip pyenv installation")
 @click.option("--skip-packages", is_flag=True, help="Skip package installation")
 @click.option("--skip-configs", is_flag=True, help="Skip config deployment")
+@click.option(
+    "--chsh-fish",
+    is_flag=True,
+    help="With --yes: run chsh -s $(which fish) when fish is installed (default login shell)",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Verbose output")
 @click.option("-q", "--quiet", is_flag=True, help="Quiet output")
-def install(profile, dry_run, yes, pyenv, no_pyenv, skip_packages, skip_configs, verbose, quiet):
+def install(profile, dry_run, yes, pyenv, no_pyenv, skip_packages, skip_configs, chsh_fish, verbose, quiet):
     """Install the dotfiles and system packages.
 
     Examples:
@@ -44,6 +49,8 @@ def install(profile, dry_run, yes, pyenv, no_pyenv, skip_packages, skip_configs,
       bootstrap install --dry-run        # Preview without changes
 
       bootstrap install --yes            # Non-interactive
+
+      bootstrap install --yes --chsh-fish   # Non-interactive + set fish as login shell
 
       bootstrap install --pyenv          # Include pyenv setup
     """
@@ -87,6 +94,7 @@ def install(profile, dry_run, yes, pyenv, no_pyenv, skip_packages, skip_configs,
         skip_configs=skip_configs,
         no_pyenv=no_pyenv,
         force_pyenv=pyenv,
+        chsh_fish=chsh_fish,
     )
 
     ui.print_success("Bootstrap run finished.")

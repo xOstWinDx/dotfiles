@@ -1,7 +1,6 @@
 """Package registry - package installation management."""
 import shutil
 import subprocess
-from typing import Iterable
 
 from bootstrap.models import (
     Package,
@@ -10,7 +9,6 @@ from bootstrap.models import (
     PackageManager,
     SystemInfo,
 )
-from bootstrap.exceptions import PackageError
 from bootstrap.logging import get_logger
 from bootstrap.privilege import get_privilege_manager
 from bootstrap.packages.definitions import PACKAGES
@@ -104,6 +102,10 @@ class PackageRegistry:
             ["apt", "install", "-y", *pkg_names],
             check=False,
         )
+        if result.returncode != 0:
+            err = (result.stderr or "").strip()
+            if err:
+                logger.warning("apt install failed (%s): %s", result.returncode, err[:2000])
         return result.returncode == 0
 
     def _install_pacman(self, pkg_names: list[str], dry_run: bool) -> bool:
@@ -209,17 +211,23 @@ class PackageRegistry:
 
         if self.package_manager == PackageManager.APT:
             names = [pkg_name for _, _, pkg_name in resolved]
-            ok = self._install_apt(names, dry_run=False)
-            for name, package, _ in resolved:
-                now_installed = self.is_installed(package)
-                if now_installed:
+            batch_ok = self._install_apt(names, dry_run=False)
+            if not batch_ok:
+                logger.warning("Batch apt install failed; ensuring each package with a separate apt call.")
+            for name, package, pkg_name in resolved:
+                if self.is_installed(package):
                     results[name] = PackageInstallResult(name, PackageInstallStatus.INSTALLED, "apt")
-                elif ok:
-                    results[name] = PackageInstallResult(
-                        name, PackageInstallStatus.FAILED, "apt succeeded but binary still missing"
-                    )
+                    continue
+                logger.info("  Ensuring apt package: %s", pkg_name)
+                self._install_apt([pkg_name], dry_run=False)
+                if self.is_installed(package):
+                    results[name] = PackageInstallResult(name, PackageInstallStatus.INSTALLED, "apt")
                 else:
-                    results[name] = PackageInstallResult(name, PackageInstallStatus.FAILED, "apt install failed")
+                    results[name] = PackageInstallResult(
+                        name,
+                        PackageInstallStatus.FAILED,
+                        "apt install failed (see logs; try: sudo apt install -y %s)" % pkg_name,
+                    )
             return results
 
         if self.package_manager == PackageManager.PACMAN:

@@ -20,7 +20,7 @@ from bootstrap.models import (
 )
 from bootstrap.packages.registry import PackageRegistry
 from bootstrap.profiles.definitions import get_profile_packages, get_profile_description
-from bootstrap.shell.integration import fish_default_shell_hint, setup_posix_shell_rc
+from bootstrap.shell.integration import setup_posix_shell_rc
 from bootstrap.shell.pyenv import install_pyenv_for_profile
 from bootstrap.ui import get_ui
 from configs.symlinker import Symlinker, TargetDisposition
@@ -124,6 +124,7 @@ class BootstrapInstaller:
         ui.print_info(f"Packages ({len(packages)}): {', '.join(packages)}")
         ui.print_info(f"Config entries: {len(configs)}")
         ui.print_info("Shell integration: POSIX rc managed blocks (bash/zsh) + fish via config deploy")
+        ui.print_info("Fish login shell: use chsh when profile includes fish (see --chsh-fish with --yes)")
         ui.print_info("Pyenv: server/desktop/full profiles (use --no-pyenv to skip; --pyenv to force)")
 
     def confirm_phases(self, ui) -> tuple[bool, bool, bool]:
@@ -260,11 +261,6 @@ class BootstrapInstaller:
         for n in notes:
             logger.info(n)
 
-        if shutil_which("fish") and self.system_info.shell != ShellType.FISH:
-            hint = fish_default_shell_hint()
-            logger.info(hint)
-            self.notes.append(hint)
-
     def print_summary(self, ui) -> None:
         ui.print_header("Summary")
         if self.package_results:
@@ -294,6 +290,7 @@ def run_bootstrap_install(
     skip_configs: bool,
     no_pyenv: bool,
     force_pyenv: bool,
+    chsh_fish: bool = False,
 ) -> int:
     """High-level flow used by the CLI."""
     ui = get_ui()
@@ -349,6 +346,31 @@ def run_bootstrap_install(
         if do_shell:
             installer.shell_integration_phase(profile)
 
+    if "fish" in packages and system_info.platform in (Platform.LINUX, Platform.MACOS):
+        from bootstrap.shell.chsh import run_chsh_fish
+
+        changed, chsh_msg = run_chsh_fish(
+            system_info,
+            dry_run=dry_run,
+            interactive=interactive,
+            assume_yes=assume_yes,
+            chsh_fish_flag=chsh_fish,
+        )
+        if chsh_msg:
+            if changed:
+                ui.print_success(chsh_msg)
+            elif dry_run:
+                ui.print_dry_run(chsh_msg)
+            elif "Skipping chsh" in chsh_msg or "declined" in chsh_msg or "left unchanged" in chsh_msg:
+                ui.print_info(chsh_msg)
+            else:
+                ui.print_warning(chsh_msg)
+        if not changed and shutil_which("fish") and system_info.shell != ShellType.FISH:
+            from bootstrap.shell.integration import fish_default_shell_hint
+
+            hint = fish_default_shell_hint()
+            installer.notes.append(hint)
+
     if not no_pyenv:
         install_pyenv_for_profile(
             profile.value,
@@ -380,4 +402,5 @@ def main(profile_name: str | None = None, dry_run: bool = False) -> int:
         skip_configs=False,
         no_pyenv=False,
         force_pyenv=False,
+        chsh_fish=False,
     )

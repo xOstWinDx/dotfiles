@@ -1,1 +1,1 @@
-"""Shell integration helpers (pyenv, starship, POSIX rc managed blocks)."""
+"""Shell integration helpers (pyenv, starship, chsh, POSIX rc managed blocks)."""
