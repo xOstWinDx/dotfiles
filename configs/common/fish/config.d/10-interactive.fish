@@ -1,6 +1,7 @@
 status is-interactive; or return
 
-# Starship prompt + transient prompt
+# Starship (requires starship on PATH — see 00-env.fish for Homebrew paths; bootstrap can install CLI).
+# TERM=xterm-256color / xterm-kitty: OK. TERM=linux is the Linux framebuffer; skip fancy prompt there.
 if type -q starship
     function starship_transient_prompt_func
         starship module character

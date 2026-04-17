@@ -330,6 +330,13 @@ def run_bootstrap_install(
 
     if do_packages:
         installer.install_packages_phase(packages)
+        if "starship" in packages:
+            from bootstrap.shell.starship import ensure_starship_installed
+
+            if not ensure_starship_installed(dry_run=dry_run):
+                installer.notes.append(
+                    "Starship CLI missing after package step; prompt may be plain until you install starship."
+                )
 
     config_results: list[DeploymentResult] = []
     if do_configs:
