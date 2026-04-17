@@ -1,0 +1,106 @@
+# Single source of truth for terminal colors (Kitty + Fish + Starship palette).
+# Edit this file, then run from repo root:
+#   python scripts/render_theme.py
+# It regenerates:
+#   - configs/common/kitty/colors.generated.conf
+#   - configs/common/fish/config.d/05-theme-palette.fish
+#   - [palettes.nordic] inside configs/common/starship/starship.toml (between markers)
+
+[meta]
+name = "dotfiles-synced"
+description = "Kitty theme.conf colors + Starship nordic palette in one place"
+
+# ── Kitty (ANSI + extras). Keys = kitty directive names. Values = #RRGGBB ──
+[kitty]
+background = "#1A1A1D"
+foreground = "#E8D3DE"
+cursor = "#E8D3DE"
+selection_background = "#E1E2EC"
+selection_foreground = "#44474F"
+
+color0 = "#1A1A1D"
+color1 = "#BD69FF"
+color2 = "#64DDE6"
+color3 = "#FFDCF3"
+color4 = "#83B0CF"
+color5 = "#B59EEA"
+color6 = "#86D4EC"
+color7 = "#E8D3DE"
+color8 = "#C4B5BF"
+color9 = "#DFAEFF"
+color10 = "#F7FFFF"
+color11 = "#FFFFFF"
+color12 = "#C3E0F1"
+color13 = "#E5D1FF"
+color14 = "#F4FCFF"
+color15 = "#E0E3E8"
+
+color248 = "#93000A"
+color249 = "#FFB4AB"
+color250 = "#8991A5"
+color251 = "#BFC6DC"
+color252 = "#44474F"
+color253 = "#C4C6D0"
+color254 = "#424753"
+color255 = "#C2C6D6"
+
+color232 = "#2B303C"
+color233 = "#DEE2F2"
+color234 = "#2E3038"
+color235 = "#E1E2EC"
+color236 = "#293041"
+color237 = "#000000"
+color238 = "#690005"
+color239 = "#FFDAD6"
+color240 = "#2B303C"
+
+color243 = "#C2C6D6"
+color244 = "#FFB4AB"
+color245 = "#474648"
+
+# ── Starship [palettes.nordic] keys (same names as in starship.toml) ────────
+[starship_palette]
+black0 = "#191D24"
+black1 = "#1E222A"
+black2 = "#222630"
+
+gray0 = "#242933"
+gray1 = "#2E3440"
+gray2 = "#3B4252"
+gray3 = "#434C5E"
+gray4 = "#4C566A"
+gray5 = "#60728A"
+
+white0_normal = "#BBC3D4"
+white0_reduce_blue = "#C0C8D8"
+white1 = "#D8DEE9"
+white2 = "#E5E9F0"
+white3 = "#ECEFF4"
+
+blue0 = "#5E81AC"
+blue1 = "#81A1C1"
+blue2 = "#88C0D0"
+
+cyan_base = "#8FBCBB"
+cyan_bright = "#9FC6C5"
+cyan_dim = "#80B3B2"
+
+red_base = "#BF616A"
+red_bright = "#C5727A"
+red_dim = "#B74E58"
+
+orange_base = "#D08770"
+orange_bright = "#D79784"
+orange_dim = "#CB775D"
+
+yellow_base = "#EBCB8B"
+yellow_bright = "#EFD49F"
+yellow_dim = "#E7C173"
+
+green_base = "#A3BE8C"
+green_bright = "#B1C89D"
+green_dim = "#97B67C"
+
+magenta_base = "#B48EAD"
+magenta_bright = "#BE9DB8"
+magenta_dim = "#A97EA1"

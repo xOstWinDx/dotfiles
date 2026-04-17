@@ -33,6 +33,13 @@ CONFIG_MANIFEST: list[ConfigManifest] = [
         description='Fish environment variables',
     ),
     ConfigManifest(
+        source=r'common/fish/config.d/05-theme-palette.fish',
+        target=r'.config/fish/conf.d/05-theme-palette.fish',
+        platforms=[Platform.LINUX, Platform.MACOS],
+        profiles=[ProfileType.MINIMAL, ProfileType.SERVER, ProfileType.DESKTOP, ProfileType.FULL],
+        description='Fish syntax colors (synced from theme/palette.toml via scripts/render_theme.py)',
+    ),
+    ConfigManifest(
         source=r'common/fish/config.d/10-interactive.fish',
         target=r'.config/fish/conf.d/10-interactive.fish',
         platforms=[Platform.LINUX, Platform.MACOS],
@@ -104,6 +111,14 @@ CONFIG_MANIFEST: list[ConfigManifest] = [
         profiles=[ProfileType.DESKTOP, ProfileType.FULL],
         condition='has_gui',
         description='Kitty terminal configuration',
+    ),
+    ConfigManifest(
+        source=r'common/kitty/colors.generated.conf',
+        target=r'.config/kitty/colors.generated.conf',
+        platforms=[Platform.LINUX, Platform.MACOS],
+        profiles=[ProfileType.DESKTOP, ProfileType.FULL],
+        condition='has_gui',
+        description='Kitty colors (generated from theme/palette.toml)',
     ),
     ConfigManifest(
         source=r'common/kitty/theme.conf',
