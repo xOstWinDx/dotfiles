@@ -57,6 +57,23 @@ class DeploymentStrategy(Enum):
     MERGE = "merge"
 
 
+class ConfigOverwritePolicy(Enum):
+    """How to handle existing config targets that differ from the manifest."""
+    ASK = "ask"
+    SKIP = "skip"
+    BACKUP_AND_REPLACE = "backup_and_replace"
+
+
+class PackageInstallStatus(Enum):
+    """Outcome of a single package install attempt."""
+    SKIPPED_INSTALLED = "skipped_installed"
+    SKIPPED_DRY_RUN = "skipped_dry_run"
+    SKIPPED_FILTERED = "skipped_filtered"
+    SKIPPED_UNKNOWN_PACKAGE = "skipped_unknown_package"
+    INSTALLED = "installed"
+    FAILED = "failed"
+
+
 class PackageCategory(Enum):
     """Package categories."""
     CORE = "core"
@@ -96,6 +113,8 @@ class Package:
     category: PackageCategory
     description: str
     required: bool = False
+    # Binaries used to detect an existing install (first match wins). Defaults to (name,).
+    install_checks: tuple[str, ...] = ()
     
     # Platform-specific package names
     apt: Optional[str] = None
@@ -103,6 +122,12 @@ class Package:
     dnf: Optional[str] = None
     brew: Optional[str] = None
     winget: Optional[str] = None
+    
+    def install_binary_candidates(self) -> tuple[str, ...]:
+        """Return executable names that indicate the package is already usable."""
+        if self.install_checks:
+            return self.install_checks
+        return (self.name,)
     
     def get_package_name(self, pm: PackageManager) -> Optional[str]:
         """Get package name for specific package manager."""
@@ -148,6 +173,14 @@ class DeploymentResult:
     message: str
     backup_path: Optional[Path] = None
     error: Optional[str] = None
+
+
+@dataclass
+class PackageInstallResult:
+    """Structured result for package installation."""
+    package_name: str
+    status: PackageInstallStatus
+    detail: str = ""
 
 
 @dataclass

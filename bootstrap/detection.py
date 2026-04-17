@@ -80,8 +80,18 @@ def detect_ssh_session() -> bool:
     return any(os.environ.get(var) for var in ssh_vars)
 
 
-def detect_gui_session() -> bool:
-    """Detect if a GUI session is available."""
+def detect_gui_session(platform: Platform | None = None) -> bool:
+    """Detect if a GUI session is available (best-effort)."""
+    plat = platform or detect_platform()
+
+    # macOS Terminal/iTerm often run without DISPLAY/WAYLAND but are still local GUI sessions.
+    if plat == Platform.MACOS:
+        # Local macOS consoles (Terminal.app / iTerm) often lack DISPLAY/WAYLAND.
+        if not detect_ssh_session():
+            ci = os.environ.get("CI", "").lower() in ("1", "true", "yes")
+            if not ci:
+                return True
+
     # Check environment variables
     if os.environ.get("DISPLAY"):
         return True
@@ -91,11 +101,11 @@ def detect_gui_session() -> bool:
         return True
     if os.environ.get("QT_QPA_PLATFORM"):
         return True
-    
+
     # Check systemd session type (Linux)
     if os.environ.get("XDG_SESSION_TYPE") in ("x11", "wayland"):
         return True
-    
+
     return False
 
 
@@ -179,7 +189,7 @@ def detect_system() -> SystemInfo:
     
     # Session type
     sys_info.is_ssh = detect_ssh_session()
-    sys_info.has_gui = detect_gui_session()
+    sys_info.has_gui = detect_gui_session(sys_info.platform)
     
     # User info
     sys_info.home_dir = Path.home()
@@ -195,30 +205,54 @@ def detect_system() -> SystemInfo:
 
 def auto_select_profile(sys_info: SystemInfo) -> str:
     """Auto-select profile based on system info."""
-    # SSH session = server profile
+    # Remote SSH session (typical headless server workflow)
     if sys_info.is_ssh:
         return "server"
-    
-    # No GUI = server profile
+
+    # No GUI heuristics (Linux CI/TTY-only, etc.)
     if not sys_info.has_gui:
         return "server"
-    
-    # Desktop with GUI = desktop profile
+
     return "desktop"
 
 
-def should_install_kitty(sys_info: SystemInfo) -> bool:
-    """Check if Kitty should be installed (local desktop only)."""
-    # SSH sessions don't need Kitty
+# Terminal emulator binaries we treat as "user already has a modern terminal"
+_OTHER_TERMINAL_BINARIES: tuple[str, ...] = (
+    "alacritty",
+    "wezterm",
+    "wezterm-gui",
+    "ghostty",
+    "foot",
+    "konsole",
+    "gnome-terminal",
+    "xfce4-terminal",
+    "terminator",
+    "kitty",
+)
+
+
+def list_present_terminal_emulators() -> list[str]:
+    """Return names of detected terminal emulators available on PATH."""
+    found: list[str] = []
+    for name in _OTHER_TERMINAL_BINARIES:
+        if shutil.which(name):
+            found.append(name)
+    return found
+
+
+def should_propose_kitty_install(sys_info: SystemInfo) -> bool:
+    """Whether Kitty is a reasonable default *candidate* (user may still decline)."""
     if sys_info.is_ssh:
         return False
-    
-    # Must have GUI
     if not sys_info.has_gui:
         return False
-    
-    # Don't force on WSL (use Windows terminal)
     if sys_info.is_wsl:
         return False
-    
+    if sys_info.platform not in (Platform.LINUX, Platform.MACOS):
+        return False
     return True
+
+
+def should_install_kitty(sys_info: SystemInfo) -> bool:
+    """Deprecated: use should_propose_kitty_install + user confirmation in the installer."""
+    return should_propose_kitty_install(sys_info)

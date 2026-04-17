@@ -56,6 +56,7 @@ alias .. 'cd ..'
 alias ... 'cd ../..'
 alias .... 'cd ../../..'
 
+
 # Kitty-specific SSH integration
 if test "$TERM" = "xterm-kitty"
     if type -q kitten
