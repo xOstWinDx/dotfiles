@@ -67,6 +67,7 @@ def render_kitty(kitty: dict[str, str]) -> str:
         "background",
         "foreground",
         "cursor",
+        "cursor_text_color",
         "selection_background",
         "selection_foreground",
     ]
