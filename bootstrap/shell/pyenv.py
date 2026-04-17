@@ -1,16 +1,15 @@
-"""Pyenv feature - optional Python version management via pyenv."""
+"""Pyenv feature — install via OS package managers (no git clone to ~/.pyenv)."""
 
 from __future__ import annotations
 
-import os
 import platform
 import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from bootstrap.logging import get_logger
+from bootstrap.privilege import get_privilege_manager
 from bootstrap.ui import get_ui
 
 logger = get_logger("bootstrap.pyenv")
@@ -28,9 +27,9 @@ def resolve_preferred_python_version(pyenv_bin: Path, minor_line: str = DEFAULT_
     """
     Resolve a concrete CPython patch version for a minor line (e.g. 3.12 -> 3.12.7).
 
-    Prefer `pyenv latest`, fall back to parsing `pyenv install --list`, then a conservative default.
+    Prefer ``pyenv latest``, fall back to parsing ``pyenv install --list``, then a conservative default.
     """
-    if not pyenv_bin.exists():
+    if not pyenv_bin.is_file():
         return f"{minor_line}.0"
 
     try:
@@ -42,12 +41,12 @@ def resolve_preferred_python_version(pyenv_bin: Path, minor_line: str = DEFAULT_
             timeout=30,
         )
         if result.returncode == 0:
-            line = (result.stdout or "").strip().splitlines()
-            token = line[-1].strip() if line else ""
+            lines = (result.stdout or "").strip().splitlines()
+            token = lines[-1].strip() if lines else ""
             if re.fullmatch(r"\d+\.\d+\.\d+", token):
                 return token
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
-        logger.debug(f"pyenv latest failed: {e}")
+        logger.debug("pyenv latest failed: %s", e)
 
     try:
         result = subprocess.run(
@@ -72,34 +71,94 @@ def resolve_preferred_python_version(pyenv_bin: Path, minor_line: str = DEFAULT_
                     candidates.append(ver)
 
             if candidates:
+
                 def patch_key(v: str) -> tuple[int, int, int]:
                     a, b, c = v.split(".")
                     return int(a), int(b), int(c)
 
                 return max(candidates, key=patch_key)
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
-        logger.debug(f"pyenv install --list parse failed: {e}")
+        logger.debug("pyenv install --list parse failed: %s", e)
 
     return f"{minor_line}.0"
 
 
+def _pyenv_root_from_bin(pyenv_bin: Path) -> Path | None:
+    try:
+        result = subprocess.run(
+            [str(pyenv_bin), "root"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=15,
+        )
+        root = (result.stdout or "").strip()
+        if root:
+            return Path(root).expanduser().resolve()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError, FileNotFoundError) as e:
+        logger.debug("pyenv root failed: %s", e)
+    return None
+
+
+def _common_pyenv_bin_candidates() -> list[Path]:
+    """Typical locations when ``brew install pyenv`` just finished (same-process PATH may be stale)."""
+    home = Path.home()
+    return [
+        Path("/opt/homebrew/bin/pyenv"),
+        Path("/usr/local/bin/pyenv"),
+        home / ".linuxbrew/bin/pyenv",
+        home / ".local/share/linuxbrew/bin/pyenv",
+        home / ".pyenv/bin/pyenv",
+    ]
+
+
+def discover_pyenv() -> tuple[Path | None, Path | None]:
+    """
+    Find pyenv executable and data root.
+
+    Homebrew puts ``pyenv`` on PATH; versions still live under ``pyenv root`` (usually ~/.pyenv).
+    """
+    which = shutil.which("pyenv")
+    if which:
+        pyenv_bin = Path(which).resolve()
+        root = _pyenv_root_from_bin(pyenv_bin)
+        return pyenv_bin, root
+
+    for candidate in _common_pyenv_bin_candidates():
+        if candidate.is_file():
+            pyenv_bin = candidate.resolve()
+            root = _pyenv_root_from_bin(pyenv_bin)
+            return pyenv_bin, root
+
+    return None, None
+
+
 class PyenvManager:
-    """Manages pyenv installation and Python version management."""
+    """Install and use pyenv from distro / Homebrew packages (no git clone)."""
 
     def __init__(self, dry_run: bool = False, interactive: bool = True):
         self.dry_run = dry_run
         self.interactive = interactive
-        self.pyenv_home = Path.home() / ".pyenv"
-        self.pyenv_bin = self.pyenv_home / "bin" / "pyenv"
-        self.is_installed = self._check_installed()
-        self.has_python = len(self.list_installed_pythons()) > 0
+        self.pyenv_bin: Path = Path.home() / ".pyenv" / "bin" / "pyenv"
+        self.pyenv_home: Path = Path.home() / ".pyenv"
+        self.is_installed = False
+        self._refresh_install_state()
 
-    def _check_installed(self) -> bool:
-        return self.pyenv_home.is_dir() and self.pyenv_bin.is_file()
+    def _refresh_install_state(self) -> None:
+        bin_path, root = discover_pyenv()
+        if bin_path and bin_path.is_file():
+            self.pyenv_bin = bin_path
+            self.pyenv_home = root if root else Path.home() / ".pyenv"
+            self.is_installed = True
+        else:
+            self.pyenv_bin = Path.home() / ".pyenv" / "bin" / "pyenv"
+            self.pyenv_home = Path.home() / ".pyenv"
+            self.is_installed = False
+
+        self.has_python = len(self.list_installed_pythons()) > 0 if self.is_installed else False
 
     def list_installed_pythons(self) -> list[str]:
-        """List Python versions installed via pyenv."""
-        if not self.is_installed:
+        if not self.is_installed or not self.pyenv_bin.is_file():
             return []
 
         try:
@@ -119,146 +178,152 @@ class PyenvManager:
                     versions.append(ver)
             return versions
         except (subprocess.TimeoutExpired, OSError, FileNotFoundError) as e:
-            logger.debug(f"Could not list pyenv versions: {e}")
+            logger.debug("Could not list pyenv versions: %s", e)
 
         return []
 
-    def install(self) -> bool:
-        """Install pyenv."""
-        if self.is_installed:
-            logger.info("Pyenv is already installed")
-            return True
-
-        if self.dry_run:
-            logger.info("[DRY RUN] Would install pyenv")
-            return True
-
-        logger.info("Installing pyenv...")
-
-        if not self._install_prerequisites():
-            logger.error("Failed to install pyenv prerequisites")
-            return False
-
-        try:
-            if not self.pyenv_home.exists():
-                subprocess.run(
-                    ["git", "clone", "https://github.com/pyenv/pyenv.git", str(self.pyenv_home)],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
-
-            plugins_dir = self.pyenv_home / "plugins"
-            pyenv_build = plugins_dir / "pyenv-build"
-            if not pyenv_build.exists():
-                plugins_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.run(
-                    ["git", "clone", "https://github.com/pyenv/pyenv-build.git", str(pyenv_build)],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
-
-            logger.info("Pyenv installed successfully")
-            self.is_installed = self._check_installed()
-            return self.is_installed
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to install pyenv: {e}")
-            return False
-
-    def _install_prerequisites(self) -> bool:
-        if self.dry_run:
-            logger.info("  [DRY RUN] Would install pyenv prerequisites")
-            return True
-
+    def _dry_run_plan(self) -> str:
         plat = platform.system().lower()
         if plat == "darwin":
-            return self._brew_install(["openssl", "readline", "sqlite3", "xz", "zlib"])
+            return "brew install pyenv" if shutil.which("brew") else "(Homebrew not found — install brew.sh first)"
         if plat == "linux":
-            if shutil.which("apt"):
-                return self._apt_install(
-                    [
-                        "make",
-                        "build-essential",
-                        "libssl-dev",
-                        "zlib1g-dev",
-                        "libbz2-dev",
-                        "libreadline-dev",
-                        "libsqlite3-dev",
-                        "libncursesw5-dev",
-                        "xz-utils",
-                        "tk-dev",
-                        "libxml2-dev",
-                        "libxmlsec1-dev",
-                        "libffi-dev",
-                        "liblzma-dev",
-                    ]
-                )
+            if shutil.which("apt") or shutil.which("apt-get"):
+                return "apt install pyenv (+ build deps if required by distro)"
             if shutil.which("pacman"):
-                return self._pacman_install(
-                    [
-                        "base-devel",
-                        "openssl",
-                        "zlib",
-                        "bzip2",
-                        "readline",
-                        "sqlite",
-                        "ncurses",
-                        "xz",
-                        "tk",
-                        "libffi",
-                    ]
-                )
+                return "pacman -S pyenv"
+            if shutil.which("dnf"):
+                return "dnf install pyenv"
+            if shutil.which("brew"):
+                return "brew install pyenv (Linuxbrew)"
+        return "no supported package manager for pyenv"
 
-        logger.warning("Unknown Linux packaging for pyenv prerequisites; continuing anyway")
-        return True
-
-    def _apt_install(self, packages: list[str]) -> bool:
-        logger.info("  Installing prerequisites via apt...")
-        try:
-            subprocess.run(["sudo", "apt", "update"], check=True, capture_output=True, text=True)
-            subprocess.run(["sudo", "apt", "install", "-y", *packages], check=True, capture_output=True, text=True)
+    def install(self) -> bool:
+        """Install pyenv using Homebrew or native Linux packages."""
+        self._refresh_install_state()
+        if self.is_installed:
+            logger.info("Pyenv already on PATH: %s (root: %s)", self.pyenv_bin, self.pyenv_home)
             return True
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"  Failed to install prerequisites: {e}")
-            return False
 
-    def _pacman_install(self, packages: list[str]) -> bool:
-        logger.info("  Installing prerequisites via pacman...")
+        if self.dry_run:
+            logger.info("[DRY RUN] Would install pyenv via: %s", self._dry_run_plan())
+            return True
+
+        logger.info("Installing pyenv via system package manager…")
+
+        plat = platform.system().lower()
+
+        if plat == "darwin":
+            self._install_macos_brew()
+        elif plat == "linux":
+            self._install_linux_distro()
+        else:
+            logger.error("Pyenv auto-install is only wired for macOS and Linux.")
+
+        self._refresh_install_state()
+        if self.is_installed:
+            logger.info("Pyenv is ready: %s (root: %s)", self.pyenv_bin, self.pyenv_home)
+            return True
+
+        logger.error(
+            "Pyenv is still missing after install attempts. "
+            "On macOS install Homebrew, then: brew install pyenv. "
+            "On Linux use your distro package (apt/pacman/dnf) or https://github.com/pyenv/pyenv#installation"
+        )
+        return False
+
+    def _install_macos_brew(self) -> bool:
+        if not shutil.which("brew"):
+            logger.error("Homebrew not found. Install from https://brew.sh then re-run bootstrap.")
+            return False
+        logger.info("Running: brew install pyenv")
         try:
-            subprocess.run(
-                ["sudo", "pacman", "-Sy", "--needed", "--noconfirm", *packages],
-                check=True,
+            result = subprocess.run(
+                ["brew", "install", "pyenv"],
                 capture_output=True,
                 text=True,
+                check=False,
             )
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"  Failed to install prerequisites: {e}")
+            if result.returncode != 0:
+                logger.error("brew install pyenv failed (exit %s)", result.returncode)
+                if result.stderr:
+                    logger.error(result.stderr.strip())
+                if result.stdout:
+                    logger.debug(result.stdout.strip())
+                return False
+        except OSError as e:
+            logger.error("brew install pyenv failed: %s", e)
             return False
 
-    def _brew_install(self, packages: list[str]) -> bool:
-        logger.info("  Installing prerequisites via Homebrew...")
-        try:
-            subprocess.run(["brew", "install", *packages], check=True, capture_output=True, text=True)
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"  Failed to install prerequisites: {e}")
-            return False
+        # Recommended build deps for ``pyenv install`` of CPython (formula may pull some already).
+        optional = ["openssl", "readline", "sqlite3", "xz", "zlib", "pkg-config"]
+        logger.info("Ensuring common build dependencies for ``pyenv install``: %s", ", ".join(optional))
+        subprocess.run(
+            ["brew", "install", *optional],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return True
+
+    def _install_linux_distro(self) -> bool:
+        """Prefer native package manager; fall back to Linuxbrew if present."""
+        pm = get_privilege_manager()
+
+        if shutil.which("apt-get") or shutil.which("apt"):
+            logger.info("Trying: apt install pyenv")
+            pm.run_privileged(["apt-get", "update"], check=False)
+            result = pm.run_privileged(["apt-get", "install", "-y", "pyenv"], check=False)
+            if result.returncode == 0:
+                return True
+            logger.warning(
+                "apt install pyenv failed (old Debian/Ubuntu may lack the package). "
+                "See https://github.com/pyenv/pyenv/wiki#suggested-build-environment"
+            )
+
+        if shutil.which("pacman"):
+            logger.info("Trying: pacman -S pyenv")
+            result = pm.run_privileged(
+                ["pacman", "-Sy", "--needed", "--noconfirm", "pyenv"],
+                check=False,
+            )
+            if result.returncode == 0:
+                return True
+            logger.warning("pacman install pyenv failed.")
+
+        if shutil.which("dnf"):
+            logger.info("Trying: dnf install pyenv")
+            result = pm.run_privileged(["dnf", "install", "-y", "pyenv"], check=False)
+            if result.returncode == 0:
+                return True
+            logger.warning("dnf install pyenv failed.")
+
+        if shutil.which("brew"):
+            logger.info("Trying: brew install pyenv (Linuxbrew)")
+            try:
+                result = subprocess.run(
+                    ["brew", "install", "pyenv"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                return result.returncode == 0
+            except OSError as e:
+                logger.warning("Linuxbrew pyenv install failed: %s", e)
+
+        return False
 
     def install_python(self, version: str, set_global: bool = False) -> bool:
-        if not self.is_installed:
+        if not self.is_installed or not self.pyenv_bin.is_file():
             logger.error("Pyenv is not installed")
             return False
 
         if self.dry_run:
-            logger.info(f"[DRY RUN] Would install Python {version}")
+            logger.info("[DRY RUN] Would install Python %s", version)
             if set_global:
-                logger.info(f"[DRY RUN] Would set Python {version} as global")
+                logger.info("[DRY RUN] Would set Python %s as global", version)
             return True
 
-        logger.info(f"Installing Python {version} (this may take a while)...")
+        logger.info("Installing Python %s (this may take a while)…", version)
 
         try:
             result = subprocess.run(
@@ -271,16 +336,21 @@ class PyenvManager:
             if result.returncode != 0:
                 combined = (result.stderr or "") + (result.stdout or "")
                 if "already exists" in combined.lower():
-                    logger.info(f"Python {version} is already present in pyenv")
+                    logger.info("Python %s is already present in pyenv", version)
                 else:
-                    logger.error(f"Failed to install Python {version}")
+                    logger.error("Failed to install Python %s", version)
                     if result.stderr:
                         logger.error(result.stderr.strip())
                     return False
 
             if set_global:
-                subprocess.run([str(self.pyenv_bin), "global", version], capture_output=True, text=True, check=False)
-                logger.info(f"Set Python {version} as global default")
+                subprocess.run(
+                    [str(self.pyenv_bin), "global", version],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                logger.info("Set Python %s as global default", version)
 
             return True
 
@@ -288,7 +358,7 @@ class PyenvManager:
             logger.error("Python installation timed out")
             return False
         except OSError as e:
-            logger.error(f"Failed to install Python: {e}")
+            logger.error("Failed to install Python: %s", e)
             return False
 
 
@@ -316,9 +386,7 @@ def install_pyenv_for_profile(
     """
     Install pyenv + a recent CPython for supported profiles.
 
-    - Interactive: ask unless `assume_yes`.
-    - Non-interactive + `assume_yes`: install sensible defaults without prompts.
-    - `force`: skip decline paths (still respects dry-run).
+    Pyenv itself comes from **Homebrew (macOS)** or **apt / pacman / dnf** (Linux), not from ``git clone``.
     """
     if not should_offer_pyenv(profile_name):
         logger.debug("Skipping pyenv for this profile")
@@ -331,7 +399,7 @@ def install_pyenv_for_profile(
     set_global_default = True
 
     if force or assume_yes:
-        pass  # use defaults
+        pass
     elif interactive:
         plan = _prompt_pyenv_plan(ui, interactive=True)
         if plan is None:
@@ -346,16 +414,17 @@ def install_pyenv_for_profile(
         logger.error("Failed to install pyenv")
         return False
 
-    if not manager.pyenv_bin.exists():
+    manager._refresh_install_state()
+    if not manager.pyenv_bin.is_file():
         logger.error("pyenv binary missing after install")
         return False
 
     version = resolve_preferred_python_version(manager.pyenv_bin, minor_line)
-    logger.info(f"Selected Python version: {version}")
+    logger.info("Selected Python version: %s", version)
 
     installed = manager.list_installed_pythons()
     if version in installed:
-        logger.info(f"Python {version} is already installed via pyenv")
+        logger.info("Python %s is already installed via pyenv", version)
         if set_global_default and not dry_run:
             subprocess.run(
                 [str(manager.pyenv_bin), "global", version],
@@ -363,9 +432,9 @@ def install_pyenv_for_profile(
                 text=True,
                 check=False,
             )
-            logger.info(f"Ensured pyenv global is {version}")
+            logger.info("Ensured pyenv global is %s", version)
     elif not manager.install_python(version, set_global=set_global_default):
-        logger.error(f"Failed to install Python {version}")
+        logger.error("Failed to install Python %s", version)
         return False
 
     logger.info("Pyenv setup complete")

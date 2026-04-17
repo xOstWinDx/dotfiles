@@ -95,16 +95,8 @@ def _zoxide_init_snippet(shell: str) -> str:
 
 
 def _pyenv_init_snippet() -> str:
-    return "\n".join(
-        [
-            'export PYENV_ROOT="$HOME/.pyenv"',
-            'case ":$PATH:" in',
-            '  *:"$PYENV_ROOT/bin":*) ;;',
-            '  *) export PATH="$PYENV_ROOT/bin:$PATH" ;;',
-            "esac",
-            'if command -v pyenv >/dev/null 2>&1; then eval "$(pyenv init -)"; fi',
-        ]
-    )
+    # ``pyenv init`` sets PYENV_ROOT and PATH correctly for both Homebrew and ~/.pyenv layouts.
+    return 'if command -v pyenv >/dev/null 2>&1; then eval "$(pyenv init -)"; fi'
 
 
 def setup_posix_shell_rc(
@@ -161,7 +153,7 @@ def setup_posix_shell_rc(
             backup=backup,
         )
 
-    if enable_pyenv and (Path.home() / ".pyenv" / "bin" / "pyenv").exists():
+    if enable_pyenv and shutil.which("pyenv"):
         changed |= ensure_managed_block(
             rc,
             "pyenv",
