@@ -1,153 +1,98 @@
 {
-    "colorscheme": "gruvbox-tc",
-    "truecolor": "on",
-
     "clipboard": "terminal",
-    "useprimary": false,
-
-    "mkparents": true,
-    "backup": true,
-    "savecursor": true,
-    "savehistory": true,
-    "saveundo": true,
-    "reload": "prompt",
-
-    "encoding": "utf-8",
-    "fileformat": "unix",
-    "eofnewline": true,
-
-    "syntax": true,
-    "ftoptions": true,
-    "autoclose": true,
-    "autoindent": true,
-    "smartpaste": true,
-    "comment": true,
-    "diff": true,
-    "diffgutter": true,
-    "status": true,
-    "linter": true,
-
-    "ruler": true,
-    "relativeruler": false,
-    "cursorline": true,
-    "scrollbar": true,
-    "scrollmargin": 5,
-    "colorcolumn": 100,
-
-    "hlsearch": true,
-    "incsearch": true,
-    "ignorecase": true,
-
-    "matchbrace": true,
-    "matchbraceleft": true,
-    "matchbracestyle": "highlight",
-
-    "hltaberrors": true,
-    "hltrailingws": true,
-    "rmtrailingws": true,
-
-    "tabsize": 4,
-    "tabstospaces": true,
-
-    "softwrap": false,
-    "wordwrap": false,
-
-    "parsecursor": true,
-    "basename": false,
-    "mouse": true,
-    "keymenu": false,
-
-    "statusformatl": "$(filename) $(modified) $(line):$(col) | $(opt:filetype) | $(opt:fileformat) | $(opt:encoding)",
-    "statusformatr": "$(bind:ToggleHelp): help | $(bind:ToggleKeyMenu): keys",
-
-    "glob:*.py": {
-        "filetype": "python",
-        "tabsize": 4,
-        "tabstospaces": true,
-        "colorcolumn": 88
-    },
-
-    "glob:*.sh": {
-        "filetype": "shell",
-        "tabsize": 4,
-        "tabstospaces": true
-    },
-
+    "colorscheme": "simple",
     "glob:*.bash": {
         "filetype": "shell",
         "tabsize": 4,
         "tabstospaces": true
     },
-
-    "glob:.bashrc": {
-        "filetype": "shell"
-    },
-
-    "glob:.env": {
-        "filetype": "ini",
-        "tabsize": 2,
-        "tabstospaces": true,
-        "rmtrailingws": false
-    },
-
-    "glob:.env.*": {
-        "filetype": "ini",
-        "tabsize": 2,
-        "tabstospaces": true,
-        "rmtrailingws": false
-    },
-
-    "glob:*.env": {
-        "filetype": "ini",
-        "tabsize": 2,
-        "tabstospaces": true,
-        "rmtrailingws": false
-    },
-
-    "glob:nginx.conf": {
-        "filetype": "nginx",
-        "tabsize": 4,
-        "tabstospaces": true
-    },
-
-    "glob:*.nginx": {
-        "filetype": "nginx",
-        "tabsize": 4,
-        "tabstospaces": true
-    },
-
     "glob:*.conf": {
         "tabsize": 4,
         "tabstospaces": true
     },
-
+    "glob:*.env": {
+        "filetype": "ini",
+        "rmtrailingws": false,
+        "tabsize": 2,
+        "tabstospaces": true
+    },
     "glob:*.json": {
         "filetype": "json",
         "tabsize": 2,
         "tabstospaces": true
     },
-
-    "glob:*.yml": {
-        "filetype": "yaml",
-        "tabsize": 2,
+    "glob:*.nginx": {
+        "filetype": "nginx",
+        "tabsize": 4,
         "tabstospaces": true
     },
-
+    "glob:*.py": {
+        "colorcolumn": 88,
+        "filetype": "python",
+        "tabsize": 4,
+        "tabstospaces": true
+    },
+    "glob:*.sh": {
+        "filetype": "shell",
+        "tabsize": 4,
+        "tabstospaces": true
+    },
     "glob:*.yaml": {
         "filetype": "yaml",
         "tabsize": 2,
         "tabstospaces": true
     },
-
+    "glob:*.yml": {
+        "filetype": "yaml",
+        "tabsize": 2,
+        "tabstospaces": true
+    },
+    "glob:.bashrc": {
+        "filetype": "shell"
+    },
+    "glob:.env": {
+        "filetype": "ini",
+        "rmtrailingws": false,
+        "tabsize": 2,
+        "tabstospaces": true
+    },
+    "glob:.env.*": {
+        "filetype": "ini",
+        "rmtrailingws": false,
+        "tabsize": 2,
+        "tabstospaces": true
+    },
     "glob:Dockerfile": {
         "filetype": "dockerfile",
         "tabsize": 4,
         "tabstospaces": true
     },
-
     "glob:docker-compose*.yml": {
         "filetype": "yaml",
         "tabsize": 2,
         "tabstospaces": true
-    }
+    },
+    "glob:nginx.conf": {
+        "filetype": "nginx",
+        "tabsize": 4,
+        "tabstospaces": true
+    },
+    "hlsearch": true,
+    "hltaberrors": true,
+    "hltrailingws": true,
+    "matchbraceleft": true,
+    "matchbracestyle": "highlight",
+    "mkparents": true,
+    "parsecursor": true,
+    "rmtrailingws": true,
+    "savecursor": true,
+    "saveundo": true,
+    "scrollbar": true,
+    "scrollmargin": 5,
+    "status": true,
+    "statusformatl": "$(filename) $(modified) $(line):$(col) | $(opt:filetype) | $(opt:fileformat) | $(opt:encoding)",
+    "statusformatr": "$(bind:ToggleHelp): help | $(bind:ToggleKeyMenu): keys",
+    "tabstospaces": true,
+    "truecolor": "on",
+    "useprimary": false
 }
